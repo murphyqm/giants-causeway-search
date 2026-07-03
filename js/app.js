@@ -1,5 +1,5 @@
 // Configuration - load handmade exhibition data
-const DATA_SOURCE = 'handmade_exhibition_with_images_new_described.txt';
+const DATA_SOURCE = 'image_descriptions.txt';
 
 class IIIFExhibition {
     constructor() {
