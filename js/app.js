@@ -1,5 +1,5 @@
 // Configuration - load handmade exhibition data
-const DATA_SOURCE = 'image_descriptions.txt';
+const DATA_SOURCE = 'Bingley_archive_item_level_linked_records.txt';
 
 class IIIFExhibition {
     constructor() {
@@ -89,6 +89,8 @@ class IIIFExhibition {
 
         return items;
     }
+
+
 
     setupSearch() {
         const searchBox = document.getElementById('search-box');
@@ -199,12 +201,20 @@ class IIIFExhibition {
         const descDiv = document.getElementById('modal-description-section');
         descDiv.innerHTML = '';
         
+        // Add Machine Perspectives header if we have any machine-generated content
+        if (item.altTextV1 || item.altTextV2 || item.imageCaptionV1 || item.imageCaptionV2 || item.searchTermsV1 || item.searchTermsV2) {
+            const machineHeader = document.createElement('h3');
+            machineHeader.textContent = 'Machine Perspectives';
+            machineHeader.style.marginTop = '0';
+            descDiv.appendChild(machineHeader);
+        }
+        
         // Alt Text V1
         if (item.altTextV1) {
             const section = document.createElement('div');
             section.className = 'description-section';
             section.innerHTML = `
-                <h3>Copilot generated alt text v1</h3>
+                <h4>Copilot generated alt text v1</h4>
                 <p>${this.escapeHTML(item.altTextV1)}</p>
             `;
             descDiv.appendChild(section);
@@ -215,7 +225,7 @@ class IIIFExhibition {
             const section = document.createElement('div');
             section.className = 'description-section';
             section.innerHTML = `
-                <h3>Copilot generated alt text v2</h3>
+                <h4>Copilot generated alt text v2</h4>
                 <p>${this.escapeHTML(item.altTextV2)}</p>
             `;
             descDiv.appendChild(section);
@@ -226,7 +236,7 @@ class IIIFExhibition {
             const section = document.createElement('div');
             section.className = 'description-section';
             section.innerHTML = `
-                <h3>Copilot generated Image Description v1</h3>
+                <h4>Copilot generated Image Description v1</h4>
                 <p>${this.escapeHTML(item.imageCaptionV1)}</p>
             `;
             descDiv.appendChild(section);
@@ -237,7 +247,7 @@ class IIIFExhibition {
             const section = document.createElement('div');
             section.className = 'description-section';
             section.innerHTML = `
-                <h3>Copilot generated Image Description v2</h3>
+                <h4>Copilot generated Image Description v2</h4>
                 <p>${this.escapeHTML(item.imageCaptionV2)}</p>
             `;
             descDiv.appendChild(section);
@@ -253,7 +263,7 @@ class IIIFExhibition {
             if (terms.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'search-terms-section';
-                section.innerHTML = '<h3>Copilot generated Search Terms v1</h3>';
+                section.innerHTML = '<h4>Copilot generated Search Terms v1</h4>';
                 const tagContainer = document.createElement('div');
                 tagContainer.className = 'search-terms-list';
                 terms.forEach(term => {
@@ -273,7 +283,7 @@ class IIIFExhibition {
             if (terms.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'search-terms-section';
-                section.innerHTML = '<h3>Copilot generated Search Terms v2</h3>';
+                section.innerHTML = '<h4>Copilot generated Search Terms v2</h4>';
                 const tagContainer = document.createElement('div');
                 tagContainer.className = 'search-terms-list';
                 terms.forEach(term => {
@@ -311,8 +321,17 @@ class IIIFExhibition {
             mapContainer = newMapContainer;
 
             const mapLabel = document.getElementById('modal-map-label');
+            
+            // Add Human Perspectives header before the map label
+            const humanHeader = document.createElement('h3');
+            humanHeader.textContent = 'Human Perspectives';
+            humanHeader.style.marginTop = '1.5rem';
+            humanHeader.style.marginBottom = '0.5rem';
+            imageSection.insertBefore(humanHeader, mapLabel);
+
             mapLabel.textContent = 'Click mapped area to see other images from the same location:';
             mapLabel.style.display = 'block';
+            mapLabel.style.marginTop = '0';
 
             // Show modal first, then initialize map
             modal.style.display = 'flex';
@@ -657,6 +676,8 @@ class IIIFExhibition {
         errorEl.style.display = 'block';
         document.getElementById('loading').style.display = 'none';
     }
+
+
 }
 
 // Initialize on page load

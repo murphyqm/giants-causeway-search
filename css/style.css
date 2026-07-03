@@ -25,6 +25,11 @@ header h1 {
     font-weight: 400;
 }
 
+h2 {
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+}
+
 header p {
     font-size: 0.95rem;
     margin-bottom: 1.5rem;
@@ -325,6 +330,13 @@ footer {
     font-size: 0.95rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
+}
+
+.description-section h4, .search-terms-section h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
 }
 
 .description-section p, .search-terms-section p {
