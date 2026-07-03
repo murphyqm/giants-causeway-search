@@ -427,7 +427,10 @@ class IIIFExhibition {
             const geoType = (item.geometryType || '').trim().toLowerCase();
             
             if (geoType === 'polygon') {
-                const polygon = L.polygon(coordinates.map(c => [c[1], c[0]]), {
+                // For Polygon, coordinates are [[[lon, lat], ...]]
+                // Extract the outer ring (first element)
+                const ring = Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+                const polygon = L.polygon(ring.map(c => [c[1], c[0]]), {
                     color: '#000',
                     weight: 2,
                     opacity: 0.8,
@@ -437,6 +440,7 @@ class IIIFExhibition {
                 // Fit map to polygon bounds
                 map.fitBounds(polygon.getBounds());
             } else if (geoType === 'point') {
+                // For Point, coordinates are [lon, lat]
                 L.circleMarker(center, {
                     radius: 6,
                     color: '#000',
@@ -446,7 +450,8 @@ class IIIFExhibition {
                 }).addTo(map);
             } else {
                 // Fallback: draw as polyline if geometry type not recognized
-                const polyline = L.polyline(coordinates.map(c => [c[1], c[0]]), {
+                const ring = Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+                const polyline = L.polyline(ring.map(c => [c[1], c[0]]), {
                     color: '#000',
                     weight: 2,
                     opacity: 0.8
@@ -507,7 +512,10 @@ class IIIFExhibition {
             const geoType = (item.geometryType || '').trim().toLowerCase();
             
             if (geoType === 'polygon') {
-                const polygon = L.polygon(coordinates.map(c => [c[1], c[0]]), {
+                // For Polygon, coordinates are [[[lon, lat], ...]]
+                // Extract the outer ring (first element)
+                const ring = Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+                const polygon = L.polygon(ring.map(c => [c[1], c[0]]), {
                     color: '#000',
                     weight: 2,
                     opacity: 0.8,
@@ -526,7 +534,8 @@ class IIIFExhibition {
                 }).addTo(map);
             } else {
                 // Fallback: draw as polyline if geometry type not recognized
-                const polyline = L.polyline(coordinates.map(c => [c[1], c[0]]), {
+                const ring = Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+                const polyline = L.polyline(ring.map(c => [c[1], c[0]]), {
                     color: '#000',
                     weight: 2,
                     opacity: 0.8
