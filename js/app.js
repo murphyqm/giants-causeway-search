@@ -6,6 +6,7 @@ class IIIFExhibition {
         this.items = [];
         this.filteredItems = [];
         this.currentModal = null;
+        this.mapInstances = [];
         this.init();
     }
 
@@ -72,6 +73,8 @@ class IIIFExhibition {
                 imageCaptionV2: obj.copilot_image_caption_v2 || '',
                 searchTermsV1: obj.copilot_search_terms_v1 || '',
                 searchTermsV2: obj.copilot_search_terms_v2 || '',
+                coordinates: obj.coordinates || '',
+                geometryType: obj.geometry_type || '',
                 metadata: {
                     institution: obj.iiif_collections || '',
                     date: obj.iiif_date || '',
@@ -275,11 +278,47 @@ class IIIFExhibition {
                 termsDiv.appendChild(section);
             }
         }
+
+        // Initialize map in modal
+        if (item.currentMap) {
+            item.currentMap.remove();
+        }
         
-        modal.style.display = 'flex';
+        if (item.coordinates) {
+            const mapContainer = document.getElementById('modal-map-container');
+            mapContainer.innerHTML = '';
+            mapContainer.style.display = 'block';
+            mapContainer.style.height = '300px';
+            mapContainer.style.marginTop = '1rem';
+            mapContainer.style.border = '1px solid #ddd';
+
+            const mapLabel = document.getElementById('modal-map-label');
+            mapLabel.textContent = 'Click mapped area to see other images from the same location:';
+            mapLabel.style.display = 'block';
+
+            // Show modal first, then initialize map
+            modal.style.display = 'flex';
+
+            setTimeout(() => {
+                const map = this.initializeModalMap(mapContainer, item);
+                item.currentMap = map;
+            }, 300);
+        } else {
+            document.getElementById('modal-map-container').style.display = 'none';
+            document.getElementById('modal-map-label').style.display = 'none';
+            modal.style.display = 'flex';
+        }
     }
 
     render() {
+        // Clean up old maps before re-rendering
+        if (this.mapInstances) {
+            this.mapInstances.forEach(map => {
+                map.remove();
+            });
+            this.mapInstances = [];
+        }
+
         const exhibition = document.getElementById('exhibition');
         exhibition.innerHTML = '';
 
@@ -347,6 +386,218 @@ class IIIFExhibition {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    initializeItemMap(mapId, item) {
+        try {
+            const coordinates = this.parseCoordinates(item.coordinates);
+            if (!coordinates || coordinates.length === 0) return;
+
+            // Get center of geometry
+            const bounds = L.latLngBounds(coordinates.map(c => [c[1], c[0]]));
+            const center = bounds.getCenter();
+
+            // Create map
+            const map = L.map(mapId, {
+                center: center,
+                zoom: 15,
+                dragging: false,
+                doubleClickZoom: false,
+                scrollWheelZoom: false,
+                boxZoom: false,
+                keyboard: false,
+                touchZoom: false
+            });
+
+            // Add greyscale OSM tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Draw the geometry
+            const geoType = (item.geometryType || '').trim().toLowerCase();
+            
+            if (geoType === 'polygon') {
+                const polygon = L.polygon(coordinates.map(c => [c[1], c[0]]), {
+                    color: '#000',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.2
+                }).addTo(map);
+
+                // Fit map to polygon bounds
+                map.fitBounds(polygon.getBounds());
+            } else if (geoType === 'point') {
+                L.circleMarker(center, {
+                    radius: 6,
+                    color: '#000',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.2
+                }).addTo(map);
+            } else {
+                // Fallback: draw as polyline if geometry type not recognized
+                const polyline = L.polyline(coordinates.map(c => [c[1], c[0]]), {
+                    color: '#000',
+                    weight: 2,
+                    opacity: 0.8
+                }).addTo(map);
+                map.fitBounds(polyline.getBounds());
+            }
+
+            // Add click handler for popup
+            map.on('click', () => {
+                this.showLocationPopup(item, map);
+            });
+
+            // Store map reference for later cleanup
+            if (!this.mapInstances) this.mapInstances = [];
+            this.mapInstances.push(map);
+
+        } catch (error) {
+            console.error('Error initializing map:', error);
+        }
+    }
+
+    initializeModalMap(container, item) {
+        try {
+            const coordinates = this.parseCoordinates(item.coordinates);
+            if (!coordinates || coordinates.length === 0) {
+                console.warn('No valid coordinates found');
+                return null;
+            }
+
+            // Get center of geometry
+            const bounds = L.latLngBounds(coordinates.map(c => [c[1], c[0]]));
+            const center = bounds.getCenter();
+
+            // Create map
+            const map = L.map(container, {
+                center: center,
+                zoom: 15,
+                dragging: true,
+                doubleClickZoom: true,
+                scrollWheelZoom: true,
+                boxZoom: true,
+                keyboard: true,
+                touchZoom: true
+            });
+
+            // Add greyscale OSM tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Invalidate size to ensure map renders properly
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+
+            // Draw the geometry
+            const geoType = (item.geometryType || '').trim().toLowerCase();
+            
+            if (geoType === 'polygon') {
+                const polygon = L.polygon(coordinates.map(c => [c[1], c[0]]), {
+                    color: '#000',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.2
+                }).addTo(map);
+
+                // Fit map to polygon bounds
+                map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
+            } else if (geoType === 'point') {
+                L.circleMarker(center, {
+                    radius: 6,
+                    color: '#000',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.2
+                }).addTo(map);
+            } else {
+                // Fallback: draw as polyline if geometry type not recognized
+                const polyline = L.polyline(coordinates.map(c => [c[1], c[0]]), {
+                    color: '#000',
+                    weight: 2,
+                    opacity: 0.8
+                }).addTo(map);
+                map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            }
+
+            // Add click handler for popup
+            map.on('click', () => {
+                this.showLocationPopup(item, map);
+            });
+
+            console.log('Map initialized successfully');
+            return map;
+
+        } catch (error) {
+            console.error('Error initializing modal map:', error);
+            return null;
+        }
+    }
+
+    parseCoordinates(coordString) {
+        try {
+            if (!coordString) return [];
+            // Parse GeoJSON format: [[lon,lat], [lon,lat], ...]
+            const coords = JSON.parse(coordString);
+            return coords;
+        } catch (error) {
+            console.error('Error parsing coordinates:', error);
+            return [];
+        }
+    }
+
+    showLocationPopup(item, map) {
+        // Find all items with the same coordinates
+        const itemsAtLocation = this.items.filter(i => 
+            i.coordinates === item.coordinates && i.thumbnail
+        );
+
+        // Create popup content
+        const popup = document.createElement('div');
+        popup.className = 'location-popup-content';
+        
+        const title = document.createElement('h4');
+        title.textContent = `${itemsAtLocation.length} image${itemsAtLocation.length !== 1 ? 's' : ''} at this location`;
+        popup.appendChild(title);
+
+        const thumbnailContainer = document.createElement('div');
+        thumbnailContainer.className = 'location-popup-thumbnails';
+
+        itemsAtLocation.forEach(locationItem => {
+            const thumbDiv = document.createElement('div');
+            thumbDiv.className = 'location-popup-thumb';
+            
+            const img = document.createElement('img');
+            img.src = locationItem.thumbnail;
+            img.alt = locationItem.title;
+            thumbDiv.appendChild(img);
+
+            thumbDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openModal(locationItem);
+            });
+
+            thumbDiv.title = locationItem.title;
+            thumbnailContainer.appendChild(thumbDiv);
+        });
+
+        popup.appendChild(thumbnailContainer);
+
+        // Create Leaflet popup
+        const coordinates = this.parseCoordinates(item.coordinates);
+        if (coordinates && coordinates.length > 0) {
+            const center = L.latLng(coordinates[0][1], coordinates[0][0]);
+            L.popup({ maxWidth: 350 })
+                .setLatLng(center)
+                .setContent(popup)
+                .openOn(map);
+        }
     }
 
     showError(message) {

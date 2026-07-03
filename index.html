@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DAIMS Exhibition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <header>
         <h1>The Giant's Causeway</h1>
-        <p>An accessible visual collection of historical and cultural artefacts</p>
+        <p>A visual and geospatial collection</p>
         
         <div class="controls">
             <input type="text" id="search-box" placeholder="Search by title, description, or keywords...">
@@ -32,6 +33,8 @@
             <div class="modal-body">
                 <div class="modal-image-section">
                     <img id="modal-image" src="" alt="">
+                    <div id="modal-map-container"></div>
+                    <p id="modal-map-label" class="modal-map-label" style="display: none;"></p>
                 </div>
                 <div class="modal-info-section">
                     <h2 id="modal-title"></h2>
@@ -48,6 +51,7 @@
         <p>Digital exhibition with open IIIF collections</p>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

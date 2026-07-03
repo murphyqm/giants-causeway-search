@@ -252,6 +252,7 @@ footer {
 
 .modal-image-section {
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
 }
 
@@ -365,4 +366,68 @@ footer {
         width: 95%;
         max-height: 95vh;
     }
+}
+
+/* Map Styles */
+#modal-map-container {
+    width: 100%;
+    height: 300px;
+    background: #e0e0e0;
+    margin-top: 1rem;
+    border: 1px solid #ddd;
+}
+
+.modal-map-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+.leaflet-container {
+    background: #fff;
+}
+
+/* Greyscale filter for map */
+.leaflet-tile-pane {
+    filter: grayscale(100%) contrast(1.1);
+}
+
+.location-popup-content {
+    min-width: 200px;
+    max-width: 350px;
+}
+
+.location-popup-content h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.location-popup-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.location-popup-thumb {
+    width: 100%;
+    height: 80px;
+    background: #e0e0e0;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.location-popup-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.location-popup-thumb:hover {
+    opacity: 0.8;
 }
