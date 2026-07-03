@@ -188,10 +188,10 @@ class IIIFExhibition {
         }
         if (item.manifest) {
             const miradorLink = document.createElement('a');
-            miradorLink.href = `https://projectmirador.org/?manifest=${encodeURIComponent(item.manifest)}`;
+            miradorLink.href = `https://universalviewer.io/uv.html?manifest=${encodeURIComponent(item.manifest)}`;
             miradorLink.target = '_blank';
             miradorLink.rel = 'noopener noreferrer';
-            miradorLink.textContent = 'Mirador Viewer';
+            miradorLink.textContent = 'View Manifest';
             linksDiv.appendChild(miradorLink);
         }
         
