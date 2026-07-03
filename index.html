@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAIMS Exhibition</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>The Giant's Causeway</h1>
+        <p>An accessible visual collection of historical and cultural artefacts</p>
+        
+        <div class="controls">
+            <input type="text" id="search-box" placeholder="Search by title, description, or keywords...">
+        </div>
+    </header>
+
+    <main>
+        <div id="loading" class="loading">Loading exhibition...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="exhibition" class="collage">
+            <!-- Items will be inserted here -->
+        </div>
+    </main>
+
+    <!-- Modal for item details -->
+    <div id="item-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-body">
+                <div class="modal-image-section">
+                    <img id="modal-image" src="" alt="">
+                </div>
+                <div class="modal-info-section">
+                    <h2 id="modal-title"></h2>
+                    <div id="modal-metadata"></div>
+                    <div id="modal-links"></div>
+                    <div id="modal-description-section"></div>
+                    <div id="modal-search-terms-section"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Digital exhibition with open IIIF collections</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
