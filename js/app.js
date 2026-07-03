@@ -290,15 +290,25 @@ class IIIFExhibition {
         // Initialize map in modal
         if (item.currentMap) {
             item.currentMap.remove();
+            item.currentMap = null;
         }
         
         if (item.coordinates) {
-            const mapContainer = document.getElementById('modal-map-container');
-            mapContainer.innerHTML = '';
-            mapContainer.style.display = 'block';
-            mapContainer.style.height = '300px';
-            mapContainer.style.marginTop = '1rem';
-            mapContainer.style.border = '1px solid #ddd';
+            // Recreate map container to avoid Leaflet initialization conflicts
+            let mapContainer = document.getElementById('modal-map-container');
+            const imageSection = mapContainer.parentElement;
+            
+            // Remove old container and create new one
+            mapContainer.remove();
+            const newMapContainer = document.createElement('div');
+            newMapContainer.id = 'modal-map-container';
+            newMapContainer.style.width = '100%';
+            newMapContainer.style.height = '300px';
+            newMapContainer.style.marginTop = '1rem';
+            newMapContainer.style.border = '1px solid #ddd';
+            
+            imageSection.appendChild(newMapContainer);
+            mapContainer = newMapContainer;
 
             const mapLabel = document.getElementById('modal-map-label');
             mapLabel.textContent = 'Click mapped area to see other images from the same location:';
@@ -401,9 +411,20 @@ class IIIFExhibition {
             const coordinates = this.parseCoordinates(item.coordinates);
             if (!coordinates || coordinates.length === 0) return;
 
-            // Get center of geometry
-            const bounds = L.latLngBounds(coordinates.map(c => [c[1], c[0]]));
-            const center = bounds.getCenter();
+            const geoType = (item.geometryType || '').trim().toLowerCase();
+            console.log(`Drawing ${geoType} for ${item.title}:`, JSON.stringify(coordinates).substring(0, 100));
+            let center;
+
+            // Get center based on geometry type
+            if (geoType === 'point') {
+                // For Point, coordinates are [lon, lat]
+                center = L.latLng(coordinates[1], coordinates[0]);
+            } else {
+                // For Polygon or other types, extract center from bounds
+                const ring = Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+                const bounds = L.latLngBounds(ring.map(c => [c[1], c[0]]));
+                center = bounds.getCenter();
+            }
 
             // Create map
             const map = L.map(mapId, {
@@ -424,8 +445,6 @@ class IIIFExhibition {
             }).addTo(map);
 
             // Draw the geometry
-            const geoType = (item.geometryType || '').trim().toLowerCase();
-            
             if (geoType === 'polygon') {
                 // For Polygon, coordinates are [[[lon, lat], ...]]
                 // Extract the outer ring (first element)
@@ -481,9 +500,22 @@ class IIIFExhibition {
                 return null;
             }
 
-            // Get center of geometry
-            const bounds = L.latLngBounds(coordinates.map(c => [c[1], c[0]]));
-            const center = bounds.getCenter();
+            const geoType = (item.geometryType || '').trim().toLowerCase();
+            console.log(`[Modal] Drawing ${geoType} for ${item.title}:`, JSON.stringify(coordinates).substring(0, 100));
+            let center;
+
+            // Get center based on geometry type
+            if (geoType === 'point') {
+                // For Point, coordinates are [lon, lat]
+                center = L.latLng(coordinates[1], coordinates[0]);
+                console.log(`[Modal] Point center:`, center);
+            } else {
+                // For Polygon or other types, extract center from bounds
+                const ring = Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+                const bounds = L.latLngBounds(ring.map(c => [c[1], c[0]]));
+                center = bounds.getCenter();
+                console.log(`[Modal] Polygon bounds:`, bounds, `center:`, center);
+            }
 
             // Create map
             const map = L.map(container, {
@@ -509,12 +541,11 @@ class IIIFExhibition {
             }, 100);
 
             // Draw the geometry
-            const geoType = (item.geometryType || '').trim().toLowerCase();
-            
             if (geoType === 'polygon') {
                 // For Polygon, coordinates are [[[lon, lat], ...]]
                 // Extract the outer ring (first element)
                 const ring = Array.isArray(coordinates[0]) && Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+                console.log(`Polygon ring length: ${ring.length}, first point: [${ring[0]}]`);
                 const polygon = L.polygon(ring.map(c => [c[1], c[0]]), {
                     color: '#000',
                     weight: 2,
@@ -523,8 +554,11 @@ class IIIFExhibition {
                 }).addTo(map);
 
                 // Fit map to polygon bounds
-                map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
+                const bounds = polygon.getBounds();
+                console.log(`Polygon bounds: ${bounds}`);
+                map.fitBounds(bounds, { padding: [50, 50] });
             } else if (geoType === 'point') {
+                console.log(`[Modal] Drawing Point marker at:`, center);
                 L.circleMarker(center, {
                     radius: 6,
                     color: '#000',
