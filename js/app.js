@@ -215,7 +215,7 @@ class IIIFExhibition {
             const section = document.createElement('div');
             section.className = 'description-section';
             section.innerHTML = `
-                <h3>Image Description v1</h3>
+                <h3>Copilot generated Image Description v1</h3>
                 <p>${this.escapeHTML(item.imageCaptionV1)}</p>
             `;
             descDiv.appendChild(section);
@@ -226,7 +226,7 @@ class IIIFExhibition {
             const section = document.createElement('div');
             section.className = 'description-section';
             section.innerHTML = `
-                <h3>Image Description v2</h3>
+                <h3>Copilot generated Image Description v2</h3>
                 <p>${this.escapeHTML(item.imageCaptionV2)}</p>
             `;
             descDiv.appendChild(section);
@@ -242,7 +242,7 @@ class IIIFExhibition {
             if (terms.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'search-terms-section';
-                section.innerHTML = '<h3>Search Terms v1</h3>';
+                section.innerHTML = '<h3>Copilot generated Search Terms v1</h3>';
                 const tagContainer = document.createElement('div');
                 tagContainer.className = 'search-terms-list';
                 terms.forEach(term => {
@@ -262,7 +262,7 @@ class IIIFExhibition {
             if (terms.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'search-terms-section';
-                section.innerHTML = '<h3>Search Terms v2</h3>';
+                section.innerHTML = '<h3>Copilot generated Search Terms v2</h3>';
                 const tagContainer = document.createElement('div');
                 tagContainer.className = 'search-terms-list';
                 terms.forEach(term => {
