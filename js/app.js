@@ -1,5 +1,5 @@
 // Configuration - load handmade exhibition data
-const DATA_SOURCE = 'Bingley_archive_item_level_linked_records.txt';
+const DATA_SOURCE = 'archives.txt';
 
 class IIIFExhibition {
     constructor() {
@@ -38,7 +38,21 @@ class IIIFExhibition {
         const response = await fetch(filename);
         if (!response.ok) throw new Error(`Could not load ${filename}`);
         
-        const text = await response.text();
+        // Read as ArrayBuffer to handle encoding properly
+        const arrayBuffer = await response.arrayBuffer();
+        
+        // Try UTF-8 first (most common for web), then fall back to iso-8859-1
+        // This preserves Irish/European diacritical marks correctly
+        let text;
+        try {
+            const decoder = new TextDecoder('utf-8');
+            text = decoder.decode(arrayBuffer);
+        } catch (e) {
+            // Fall back to iso-8859-1 if UTF-8 fails
+            const decoder = new TextDecoder('iso-8859-1');
+            text = decoder.decode(arrayBuffer);
+        }
+        
         return this.parseTSV(text);
     }
 
@@ -52,7 +66,9 @@ class IIIFExhibition {
             const obj = {};
             
             headers.forEach((header, index) => {
-                obj[header.trim()] = values[index] ? values[index].trim() : '';
+                // Sanitize each value as it's extracted to fix encoding issues
+                const rawValue = values[index] ? values[index].trim() : '';
+                obj[header.trim()] = this.sanitizeText(rawValue);
             });
 
             // Parse all available fields from the enriched data file
@@ -79,8 +95,33 @@ class IIIFExhibition {
                     institution: obj.iiif_collections || '',
                     date: obj.iiif_date || '',
                     extent: obj.iiif_extent || ''
-                }
+                },
+                // Linked items data
+                linkedItems: [],
+                linkedItemsCount: obj.linked_items_count || '',
+                linkingMethod: obj.linking_method || ''
             };
+            
+            // Parse linked items 1, 2, 3
+            for (let itemNum = 1; itemNum <= 3; itemNum++) {
+                const linkedUrl = obj[`linked_item_${itemNum}_url`];
+                if (linkedUrl) {
+                    item.linkedItems.push({
+                        url: linkedUrl,
+                        title: obj[`linked_item_${itemNum}_title`] || '',
+                        institution: obj[`linked_item_${itemNum}_institution`] || '',
+                        archiveCollection: obj[`linked_item_${itemNum}_archive_collection`] || '',
+                        itemType: obj[`linked_item_${itemNum}_item_type`] || '',
+                        date: obj[`linked_item_${itemNum}_date`] || '',
+                        description: obj[`linked_item_${itemNum}_description`] || '',
+                        keywords: obj[`linked_item_${itemNum}_keywords`] || '',
+                        theme: obj[`linked_item_${itemNum}_theme`] || '',
+                        relevance: obj[`linked_item_${itemNum}_relevance`] || '',
+                        sourceRefId: obj[`linked_item_${itemNum}_source_reference_id`] || '',
+                        linkConfidence: obj[`linked_item_${itemNum}_link_confidence`] || ''
+                    });
+                }
+            }
             
             if (item.manifest) {
                 items.push(item);
@@ -201,8 +242,9 @@ class IIIFExhibition {
         const descDiv = document.getElementById('modal-description-section');
         descDiv.innerHTML = '';
         
-        // Add Machine Perspectives header if we have any machine-generated content
-        if (item.altTextV1 || item.altTextV2 || item.imageCaptionV1 || item.imageCaptionV2 || item.searchTermsV1 || item.searchTermsV2) {
+        // Add Machine Perspectives header if we have any machine-generated content or linked items
+        const hasMachineContent = item.altTextV1 || item.altTextV2 || item.imageCaptionV1 || item.imageCaptionV2 || item.searchTermsV1 || item.searchTermsV2 || (item.linkedItems && item.linkedItems.length > 0);
+        if (hasMachineContent) {
             const machineHeader = document.createElement('h3');
             machineHeader.textContent = 'Machine Perspectives';
             machineHeader.style.marginTop = '0';
@@ -295,6 +337,87 @@ class IIIFExhibition {
                 section.appendChild(tagContainer);
                 termsDiv.appendChild(section);
             }
+        }
+
+        // Linked items
+        if (item.linkedItems && item.linkedItems.length > 0) {
+            const linkedSection = document.createElement('div');
+            linkedSection.className = 'description-section';
+            linkedSection.innerHTML = '<h4>Linked Records</h4>';
+            
+            item.linkedItems.forEach((linkedItem, idx) => {
+                // Create title header with link
+                const titleHeader = document.createElement('h5');
+                titleHeader.style.margin = '1rem 0 0.5rem 0';
+                titleHeader.style.fontSize = '0.95rem';
+                titleHeader.style.fontWeight = '600';
+                
+                const sanitizedTitle = this.sanitizeText(linkedItem.title);
+                if (linkedItem.url) {
+                    const link = document.createElement('a');
+                    link.href = linkedItem.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = sanitizedTitle;
+                    link.style.textDecoration = 'underline';
+                    link.style.color = 'inherit';
+                    titleHeader.appendChild(link);
+                } else {
+                    titleHeader.textContent = sanitizedTitle;
+                }
+                
+                linkedSection.appendChild(titleHeader);
+                
+                // Create indented list for details
+                const detailsList = document.createElement('ul');
+                detailsList.style.margin = '0.25rem 0 1rem 1.5rem';
+                detailsList.style.fontSize = '0.9rem';
+                
+                const details = [
+                    { label: 'Institution', value: linkedItem.institution },
+                    { label: 'Archive Collection', value: linkedItem.archiveCollection },
+                    { label: 'Item Type', value: linkedItem.itemType },
+                    { label: 'Date', value: linkedItem.date },
+                    { label: 'Description', value: linkedItem.description },
+                    { label: 'Keywords', value: linkedItem.keywords },
+                    { label: 'Theme', value: linkedItem.theme },
+                    { label: 'Relevance', value: linkedItem.relevance },
+                    { label: 'Source Reference', value: linkedItem.sourceRefId },
+                    { label: 'Link Confidence', value: linkedItem.linkConfidence }
+                ];
+                
+                details.forEach(detail => {
+                    if (detail.value) {
+                        const li = document.createElement('li');
+                        const sanitizedValue = this.sanitizeText(detail.value);
+                        li.innerHTML = `<strong>${detail.label}:</strong> ${this.escapeHTML(sanitizedValue)}`;
+                        detailsList.appendChild(li);
+                    }
+                });
+                
+                linkedSection.appendChild(detailsList);
+            });
+            
+            // Add linking method info if available
+            if (item.linkedItemsCount || item.linkingMethod) {
+                const infoDiv = document.createElement('div');
+                infoDiv.style.marginTop = '1rem';
+                infoDiv.style.fontSize = '0.9rem';
+                infoDiv.style.color = '#666';
+                
+                let infoHTML = '';
+                if (item.linkedItemsCount) {
+                    infoHTML += `<p><strong>Total linked records:</strong> ${this.escapeHTML(item.linkedItemsCount)}</p>`;
+                }
+                if (item.linkingMethod) {
+                    infoHTML += `<p><strong>Linking method:</strong> ${this.escapeHTML(item.linkingMethod)}</p>`;
+                }
+                
+                infoDiv.innerHTML = infoHTML;
+                linkedSection.appendChild(infoDiv);
+            }
+            
+            descDiv.appendChild(linkedSection);
         }
 
         // Initialize map in modal
@@ -423,6 +546,27 @@ class IIIFExhibition {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    sanitizeText(text) {
+        if (!text) return text;
+        // Fix specific mojibake patterns while preserving legitimate Unicode
+        // (Irish/European accented characters: é, ú, á, ö, etc.)
+        
+        // 1. UTF-8 replacement character (ï¿½) masking apostrophes/punctuation
+        //    Commonly appears as: "Giant's" -> "Giantï¿½s", "Causeway's" -> "Causewayï¿½s"
+        text = text.replace(/([a-zA-Z])ï¿½([a-zA-Zs])/g, "$1'$2");
+        
+        // 2. Year ranges with mojibake: only replace high bytes BETWEEN year numbers
+        //    E.g., "1905[0xC2 0xA0]1929" -> "1905–1929"
+        text = text.replace(/(\d{4})[\x80-\xFF]+(\d{4})/g, '$1–$2');
+        
+        // 3. Other high-byte mojibake patterns (stray non-ASCII bytes)
+        //    Only between ASCII letters to avoid breaking legitimate Unicode
+        text = text.replace(/([a-z])[\x80-\xFF]s\b/gi, "$1's");
+        
+        // Note: Legitimate Unicode text with accents (Dúchas, Fiannaigheacht) preserved
+        return text;
     }
 
     initializeItemMap(mapId, item) {
