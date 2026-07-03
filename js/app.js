@@ -186,6 +186,14 @@ class IIIFExhibition {
             link.textContent = 'IIIF Manifest';
             linksDiv.appendChild(link);
         }
+        if (item.manifest) {
+            const miradorLink = document.createElement('a');
+            miradorLink.href = `https://projectmirador.org/?manifest=${encodeURIComponent(item.manifest)}`;
+            miradorLink.target = '_blank';
+            miradorLink.rel = 'noopener noreferrer';
+            miradorLink.textContent = 'Mirador Viewer';
+            linksDiv.appendChild(miradorLink);
+        }
         
         // Set description
         const descDiv = document.getElementById('modal-description-section');
